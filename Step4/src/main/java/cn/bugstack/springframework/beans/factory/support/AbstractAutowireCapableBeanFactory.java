@@ -57,7 +57,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
                     BeanReference beanReference = (BeanReference) value;
                     value = getBean(beanReference.getBeanName());
                 }
-                BeanUtil.setFieldValue(bean, name, value);
+                MyBeanUtil.setFieldValue(bean, name, value);
             }
         } catch (Exception e) {
             System.out.println(e);
