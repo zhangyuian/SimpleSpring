@@ -5,7 +5,7 @@ import cn.bugstack.springframework.beans.PropertyValue;
 import cn.bugstack.springframework.beans.PropertyValues;
 import cn.bugstack.springframework.beans.factory.config.BeanDefinition;
 import cn.bugstack.springframework.beans.factory.config.BeanReference;
-import cn.hutool.core.bean.BeanUtil;
+import cn.bugstack.springframework.utils.MyBeanUtil;
 
 import java.lang.reflect.Constructor;
 
