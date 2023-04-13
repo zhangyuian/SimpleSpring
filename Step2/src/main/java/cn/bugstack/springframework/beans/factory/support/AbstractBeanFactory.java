@@ -1,9 +1,10 @@
 package cn.bugstack.springframework.beans.factory.support;
 
 import cn.bugstack.springframework.beans.BeansException;
+import cn.bugstack.springframework.beans.factory.BeanFactory;
 import cn.bugstack.springframework.beans.factory.config.BeanDefinition;
 
-public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry {
+public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
 
     @Override
     public Object getBean(String name) throws BeansException {

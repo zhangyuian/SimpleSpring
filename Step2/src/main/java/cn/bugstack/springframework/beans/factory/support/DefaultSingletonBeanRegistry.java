@@ -19,5 +19,4 @@ public abstract class DefaultSingletonBeanRegistry implements SingletonBeanRegis
         singletonObjects.put(beanName, singletonObject);
     }
 
-    public abstract Object getBean(String name) throws BeansException;
 }
