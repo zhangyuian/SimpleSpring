@@ -8,6 +8,12 @@ import java.beans.Beans;
 
 public abstract class AbstractBeanFactory extends DefaultSingletonBeanRegistry implements BeanFactory {
 
+
+    @Override
+    public Object getBean(String name) throws BeansException {
+        return getBean(name, null);
+    }
+
     @Override
     public Object getBean(String name, Object... args) throws BeansException {
         Object bean = getSingleton(name);
