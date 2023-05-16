@@ -1,33 +1,99 @@
-## Step 5 资源加载器解析文件注册对象
+## Step 7 初始化和销毁方法
+
+目标：
+
+*   实现在XML中配置的初始化和销毁方法
+
+方案：
+
+![image](https://bugstack.cn/assets/images/spring/spring-8-03.png)
+
+初始化、销毁的两种调用方法：
+
+*   xml配置：将init-method 和 destroy-method 两个注解配置定义到BeanDefinition 中，这样子就可以在invokeInitMethods 初始化调用中通过反射的方法调用指定的初始化方法了
+*   实现接口：如果采用接口实现的方式，直接通过Bean 对象调用对应接口定义的方法即可
+
+注册钩子：
+
+*   在虚拟机中注册hook，在虚拟机关闭的时候会调用Bean 对象的销毁方法
+
+在createBean 中添加初始化方法，初始化Bean： invokeInitMethods 中判断其是否实现接口，init-method是否为空，再依次执行初始化方法即可。
+
+销毁方法则需要增加一个适配器类 DisposableBeanAdapter（接口和配置都集成在该类中）
+
+*   DisposableBeanAdapter 实现销毁接口，重写 destroy 方法，将接口和方法的判断都放在其中。在createBean 的时候注册 DisposableBeanAdapter 对象
+
+在 ConfigurableApplicationContext 接口中新增 close() 方法（即hook中调用的销毁方法）和 registerShutdownHook() 方法，并在AbstractApplicationContext 中实现 close() 方法，并实现 registerShutdownHook() 类暴露给外面注册虚拟机hook()，这样就实现了Bean 的销毁方法
+
+UserDao 只配置初始化、销毁方法，不实现接口
+
+```java
+public class UserDao {
+
+    private static Map<String, String> hashMap = new HashMap<>();
+
+    public void initDataMethod(){
+        System.out.println("执行：init-method");
+        hashMap.put("10001", "小傅哥");
+        hashMap.put("10002", "八杯水");
+        hashMap.put("10003", "阿毛");
+    }
+
+    public void destroyDataMethod(){
+        System.out.println("执行：destroy-method");
+        hashMap.clear();
+    }
+
+    public String queryUserName(String uId) {
+        return hashMap.get(uId);
+    }
+
+}
+```
+
+
+
+UserService 只实现初始化、销毁接口，不配置
+
+```java
+public class UserService implements InitializingBean, DisposableBean {
+
+    private String uId;
+    private String company;
+    private String location;
+    private UserDao userDao;
+
+    @Override
+    public void destroy() throws Exception {
+        System.out.println("执行：UserService.destroy");
+    }
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        System.out.println("执行：UserService.afterPropertiesSet");
+    }
+
+    // ...get/set
+}
+ 
+```
+
+手动注册虚拟机钩子
 
 ```java
 @Test
-public void test_xml() throws BeansException {
-    // 1. 初始化BeanFactory
-    DefaultListableBeanFactory beanFactory = new DefaultListableBeanFactory();
+public void test_xml() {
+    // 1.初始化 BeanFactory
+    ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:spring.xml");
+    applicationContext.registerShutdownHook();      
 
-    // 2. 读取配置文件 & 注册 Bean
-    XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(beanFactory);
-    reader.loadBeanDefinitions("classpath:spring.xml");
-
-    // 3. 获取Bean对象调用方法
-    UserService userService = (UserService) beanFactory.getBean("userService", UserService.class);
+    // 2. 获取Bean对象调用方法
+    UserService userService = applicationContext.getBean("userService", UserService.class);
     String result = userService.queryUserInfo();
     System.out.println("测试结果：" + result);
 }
 ```
 
-这里需要实现的是第二步，读取配置文件，将配置文件中的 Bean 注册到 BeanFactory 中。
+类图如下：
 
-需要实现两个大的部分：
-
-*   资源加载的 Resource 接口
-*   将资源注册到 BeanFactory 的 BeanDefinitionReader 接口
-
-各类的关系如下图所示：
-
-![image](https://bugstack.cn/assets/images/spring/spring-6-03.png)
-
-*   Resource 接口有三种实现方法，分别是从 classpath、file、url 获取到配置文件
-*   ResourceLoader 用来装载并获取到 Resource 资源
-*   BeanDefinitionReader 用于加载 Bean 配置并将 Bean 注册到 BeanFactory 中，其依赖ResourceLoader 来获取配置文件内容，依赖BeanDefinitionRegistry 实现 Bean 的注册。XmlBeanDefinitionReader实现了解析xml配置文件的能力，将xml中的Bean注册到Bean工厂中
+![image](https://bugstack.cn/assets/images/spring/spring-8-04.png)
